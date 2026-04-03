@@ -1,0 +1,27 @@
+# Progress Update (2026-04-03)
+
+## Resolved Issues:
+
+1.  **`init.lua` not printing to `ai_debug.txt`:**
+    *   **Problem:** Lua `print` statements were not appearing in `ai_debug.txt`.
+    *   **Resolution:**
+        *   Identified that `E:\BalatroTest\balatro_mod\Balatro` is the directory dragged into `love.exe`.
+        *   Confirmed `src/lua_game_hooks/init.lua` contains the correct `print` redirection logic.
+        *   Corrected `log_file_path` in `src/lua_game_hooks/init.lua` from `love.filesystem.getSaveDirectory() .. "/ai_debug.txt"` to `./ai_debug.txt` (as per user's instruction).
+        *   Switched from `love.filesystem.newFile` to `io.open` for direct file system access, resolving silent failures.
+        *   **Status:** Resolved. `ai_debug.txt` is now being created and populated correctly in `E:\BalatroTest\balatro_mod\Balatro\ai_debug.txt`.
+
+2.  **TCP communication issue ("Failed to receive response from Python TCP server: closed"):**
+    *   **Problem:** Lua client connected and sent data to the Python TCP server, but the connection was closed before a response could be received.
+    *   **Resolution:**
+        *   Modified `src/python_orchestrator/communication/socket_server.py` to prefix its JSON responses with a 4-byte little-endian unsigned integer representing the length of the JSON data.
+        *   Modified `src/lua_game_hooks/socket_client.lua` to expect and read this 4-byte length prefix before attempting to receive the full TCP response data.
+        *   **Status:** Resolved. Subsequent TCP communications show successful response reception and JSON parsing.
+
+3.  **HTTP response parsing issue ("HTTP request returned non-table 'res'. Type: number Value: 1"):**
+    *   **Problem:** Lua client's `socket.http` call to FastAPI for AI suggestions (`http://127.0.0.1:8000/suggestion`) resulted in `res` being a `number` (`1`) instead of a `table` containing the response body, even when FastAPI returned `200 OK`. This prevented successful JSON parsing of the AI suggestion.
+    *   **Resolution:** Modified `src/lua_game_hooks/socket_client.lua` to correctly use `ltn12.sink.table()` to collect response chunks into a table, and then `table.concat()` to reconstruct the full response body. This correctly extracted and allowed parsing of the JSON response from FastAPI.
+    *   **Status:** Resolved. HTTP communication now successfully receives and parses AI suggestions.
+
+## Next Steps:
+All reported issues have been resolved. The system is now fully functional for communication between the Lua client and the Python orchestrator. Further tasks can now be implemented.
