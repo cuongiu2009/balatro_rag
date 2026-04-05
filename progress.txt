@@ -1,4 +1,4 @@
-# Progress Update (2026-04-03)
+# Progress Update (2026-04-05)
 
 ## Resolved Issues:
 
@@ -23,5 +23,46 @@
     *   **Resolution:** Modified `src/lua_game_hooks/socket_client.lua` to correctly use `ltn12.sink.table()` to collect response chunks into a table, and then `table.concat()` to reconstruct the full response body. This correctly extracted and allowed parsing of the JSON response from FastAPI.
     *   **Status:** Resolved. HTTP communication now successfully receives and parses AI suggestions.
 
+## Additional Progress (2026-04-05):
+
+1.  **Git Repository Setup:**
+    *   Assisted in correctly configuring the Git repository.
+    *   Managed `.gitignore` to exclude specified directories and files (`Balatro/`, `.specify/`, `.gemini/`, `GEMINI.md`).
+    *   Resolved issues with remote origin configuration and branch merging.
+2.  **Python Environment Setup:**
+    *   Ensured Python virtual environment is set up and activated.
+    *   Installed necessary dependencies, including `psutil`.
+3.  **Testing:**
+    *   Attempted to run Python tests, encountered and resolved `ModuleNotFoundError` by setting `PYTHONPATH`.
+    *   Resolved `IndentationError` in `test_ai_suggestion_pipeline.py`.
+    *   Encountered `ImportError` in `test_ai_suggestion_pipeline.py` due to refactored `socket_server.py`.
+    *   **Status:** Test execution task cancelled as per user's explicit instruction.
+4.  **Refined Error Handling and Logging (T026):**
+    *   Reviewed existing Lua and Python components for error handling and logging. The current implementation largely aligns with the `plan.md` strategy (Lua errors to `ai_debug.txt`, Python errors logged and simplified messages sent to Lua).
+    *   **Status:** Completed.
+5.  **Defined Performance Monitoring Methodology (T027):**
+    *   Implemented `tests/python/stress/performance_monitor.py`. This script defines a methodology for monitoring FPS and input lag, outlining how data would be collected and analyzed. It includes a simulation function for demonstration.
+    *   **Status:** Completed.
+6.  **Defined Stress Testing for Resource Usage (T028):**
+    *   Implemented `tests/python/stress/test_resource_usage.py`. This script outlines a methodology for conducting stress tests to monitor CPU and RAM usage of the Python orchestrator. It uses `psutil` and includes a simulation function, along with a placeholder for VRAM monitoring considerations.
+    *   **Status:** Completed.
+7.  **Reviewed Code for Performance Optimization (T029):**
+    *   Provided a comprehensive review of potential optimization areas for both Lua and Python components. This included suggestions for `data_extractor.lua`, `socket_client.lua`, FastAPI server, RAG processor, LM Studio client, and cross-component strategies like data serialization and logging verbosity.
+    *   **Status:** Completed.
+
+## Current Challenges & Debugging (2026-04-05):
+
+1.  **Problem:** AI suggestion consistently returning the same generic result (e.g., "Play CS card"), despite initial HTTP/TCP communication fixes. This indicates the AI is not receiving dynamic game state for analysis.
+2.  **Investigation & Findings:**
+    *   Confirmed `G.hand.cards`, `G.jokers.cards`, and `G.consumeables.cards` are the correct paths for accessing card/joker data.
+    *   Confirmed that these data structures are populated during active gameplay.
+    *   Identified that `serialize_cards` and `serialize_jokers` functions in `data_extractor.lua` are failing to extract specific `id` and `name` attributes from card/joker objects, leading to "Unknown Card" and "UnknownID" in the JSON payload sent to Python.
+    *   Discovered that the `print_table_recursive` function's `max_depth` (initially 3, then increased to 7) was insufficient to fully expose the nested structure of card/joker objects within the full `_G.G` dump.
+    *   Added debug prints directly within `serialize_cards` and `serialize_jokers` to inspect the structure of individual card/joker objects.
+3.  **User Decision:** User has explicitly stated that extracting the correct `id` and `name` for cards and jokers is currently too time-consuming and can be deprioritized. For now, the system should proceed with extracting `rank` and `suit` for cards, and the basic `name`, `value`, and `effect` for jokers, even if `id` and detailed `name` remain "Unknown". This is deemed acceptable for a preliminary functional product.
+4.  **Python Script for Log Parsing:** Developed and refined `src/python_orchestrator/scripts/parse_ai_debug_log.py` to efficiently extract the last full `_G.G` table dump from `ai_debug.txt`.
+
 ## Next Steps:
-All reported issues have been resolved. The system is now fully functional for communication between the Lua client and the Python orchestrator. Further tasks can now be implemented.
+*   **Remove temporary debug prints:** Revert the changes made to `serialize_cards` and `serialize_jokers` by removing the `print` statements and `print_table_recursive` calls within them.
+*   **Reset `max_depth`:** Reset the `max_depth` of the main `print_table_recursive` in `M.extract_in_round_state` back to 3.
+*   **Focus on core functionality:** Continue development, temporarily accepting the "Unknown Card/ID" for deeper analysis at a later stage.

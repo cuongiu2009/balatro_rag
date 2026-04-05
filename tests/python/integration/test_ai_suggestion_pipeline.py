@@ -6,14 +6,7 @@ from src.python_orchestrator.communication.socket_server import handle_game_stat
 
 class TestAISuggestionPipeline(unittest.TestCase):
 
-import unittest
-import asyncio
-import json
-from unittest.mock import MagicMock, AsyncMock, patch
-# Import the actual module containing handle_game_state
-from src.python_orchestrator.communication.socket_server import handle_game_state, lm_studio_client, rag_processor
 
-class TestAISuggestionPipeline(unittest.TestCase):
 
     def setUp(self):
         super().setUp()
@@ -91,8 +84,6 @@ class TestAISuggestionPipeline(unittest.TestCase):
         lm_studio_client.get_suggestion.assert_called_once_with("Mocked prompt")
         # No call to rag_processor.parse_lm_studio_response is expected
 
-if __name__ == '__main__':
-    unittest.main()
 
-if __name__ == '__main__':
-    unittest.main()
+
+

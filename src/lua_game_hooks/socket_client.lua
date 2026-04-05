@@ -2,6 +2,7 @@ local socket = require("socket")
 local http = require("socket.http") -- Added for HTTP requests
 local json = require("json") 
 local ltn12 = require("ltn12")
+local data_extractor = require("data_extractor") -- Require the data_extractor module
 
 local M = {}
 
@@ -101,7 +102,7 @@ function M.request_ai_suggestion()
     print("Requesting AI suggestion from FastAPI...")
     local url = "http://" .. M.fastapi_host .. ":" .. M.fastapi_port .. "/suggestion"
 
-    local payload = {} 
+    local payload = data_extractor.extract_in_round_state() -- Use actual game state
     local json_data = json.encode(payload)
 
     local response_chunks = {} 

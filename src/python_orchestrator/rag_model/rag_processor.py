@@ -37,7 +37,8 @@ class RAGProcessor:
         # Create a query for context retrieval based on the game state
         query_parts = []
         if game_state.get("player_hand"):
-            query_parts.append(f"player hand: {', '.join(game_state['player_hand'])}")
+            card_descriptions = [f"{card.get('rank', 'Unknown Rank')} of {card.get('suit', 'Unknown Suit')}" for card in game_state['player_hand']]
+            query_parts.append(f"player hand: {', '.join(card_descriptions)}")
         if game_state.get("active_jokers"):
             joker_names = [joker.get("name", "Unknown Joker") for joker in game_state["active_jokers"]]
             query_parts.append(f"active jokers: {', '.join(joker_names)}")
@@ -45,6 +46,9 @@ class RAGProcessor:
             query_parts.append(f"current blind: {game_state['current_blind_name']}")
         
         query_text = " ".join(query_parts) if query_parts else "Balatro game strategy"
+        
+        print(f"DEBUG: formulate_prompt received FULL game_state: {json.dumps(game_state, indent=2)}")
+        print(f"DEBUG: Query text for context retrieval: {query_text}")
         
         # Retrieve context from ChromaDB
         retrieved_context = self.retrieve_context(query_text)
