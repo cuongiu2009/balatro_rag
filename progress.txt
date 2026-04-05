@@ -53,16 +53,20 @@
 ## Current Challenges & Debugging (2026-04-05):
 
 1.  **Problem:** AI suggestion consistently returning the same generic result (e.g., "Play CS card"), despite initial HTTP/TCP communication fixes. This indicates the AI is not receiving dynamic game state for analysis.
-2.  **Investigation & Findings:**
+2.  **Investigation & Findings (AI Suggestion Quality):**
     *   Confirmed `G.hand.cards`, `G.jokers.cards`, and `G.consumeables.cards` are the correct paths for accessing card/joker data.
     *   Confirmed that these data structures are populated during active gameplay.
-    *   Identified that `serialize_cards` and `serialize_jokers` functions in `data_extractor.lua` are failing to extract specific `id` and `name` attributes from card/joker objects, leading to "Unknown Card" and "UnknownID" in the JSON payload sent to Python.
-    *   Discovered that the `print_table_recursive` function's `max_depth` (initially 3, then increased to 7) was insufficient to fully expose the nested structure of card/joker objects within the full `_G.G` dump.
-    *   Added debug prints directly within `serialize_cards` and `serialize_jokers` to inspect the structure of individual card/joker objects.
-3.  **User Decision:** User has explicitly stated that extracting the correct `id` and `name` for cards and jokers is currently too time-consuming and can be deprioritized. For now, the system should proceed with extracting `rank` and `suit` for cards, and the basic `name`, `value`, and `effect` for jokers, even if `id` and detailed `name` remain "Unknown". This is deemed acceptable for a preliminary functional product.
-4.  **Python Script for Log Parsing:** Developed and refined `src/python_orchestrator/scripts/parse_ai_debug_log.py` to efficiently extract the last full `_G.G` table dump from `ai_debug.txt`.
+    *   Identified that `serialize_cards` and `serialize_jokers` functions in `data_extractor.lua` are currently failing to extract specific `id` and `name` attributes from card/joker objects, leading to "Unknown Card" and "UnknownID" in the JSON payload sent to Python.
+    *   Discovered that the `print_table_recursive` function's `max_depth` (initially 3, then increased to 7 for debugging) was insufficient to fully expose the nested structure of card/joker objects within the full `_G.G` dump.
+    *   Added debug prints directly within `serialize_cards` and `serialize_jokers` to inspect the structure of individual card/joker objects. (These have now been removed as per user instruction).
+3.  **Resolved Problem:** Python `TypeError: sequence item 0: expected str instance, dict found` when formulating prompt for AI.
+    *   **Resolution:** Modified `src/python_orchestrator/rag_model/rag_processor.py` to correctly convert card dictionaries into descriptive strings (e.g., "King of Hearts") before joining them for the query text.
+    *   **Status:** Resolved. The Python server can now successfully send prompts to LM Studio and receive suggestions.
+4.  **Persistent Problem (Impact on AI Suggestion Quality):** Despite the Python error fix, AI suggestions remain generic and sometimes illogical (e.g., suggesting a "flush" with two Kings when a pair is obvious).
+    *   **Root Cause:** This is a direct consequence of the "Unknown Card/ID" issue in the Lua `data_extractor.lua`. The LM Studio model receives `player_hand` and `active_jokers` as lists of dictionaries where each card/joker object has `name: "Unknown Card"` and `id: "UnknownID"`. Without proper unique identifiers and names, the AI cannot reason about specific card instances, their enhancements, or unique joker abilities to provide nuanced strategic advice.
+5.  **User Decision:** User has explicitly stated that extracting the correct `id` and `name` for cards and jokers is currently too time-consuming and can be deprioritized. For now, the system should proceed with extracting `rank` and `suit` for cards, and the basic `name`, `value`, and `effect` for jokers, even if `id` and detailed `name` remain "Unknown". This is deemed acceptable for a preliminary functional product. However, it's now clear that addressing this is crucial for meaningful AI suggestions.
+6.  **Python Script for Log Parsing:** Developed and refined `src/python_orchestrator/scripts/parse_ai_debug_log.py` to efficiently extract the last full `_G.G` table dump from `ai_debug.txt`.
 
 ## Next Steps:
-*   **Remove temporary debug prints:** Revert the changes made to `serialize_cards` and `serialize_jokers` by removing the `print` statements and `print_table_recursive` calls within them.
-*   **Reset `max_depth`:** Reset the `max_depth` of the main `print_table_recursive` in `M.extract_in_round_state` back to 3.
-*   **Focus on core functionality:** Continue development, temporarily accepting the "Unknown Card/ID" for deeper analysis at a later stage.
+*   **Temporarily accept current card/joker serialization:** Proceed with the current level of card/joker detail (rank, suit for cards; basic name, value, effect for jokers). The deeper analysis for `id` and specific `name` attributes will be a future task, as it requires more in-depth Lua reverse engineering.
+*   **Focus on core AI pipeline:** Ensure the overall flow from game state extraction, through Python processing, to LM Studio suggestion, and back to Lua display is stable and functional with the current data.
