@@ -1,0 +1,6 @@
+FastAPI
+uvicorn
+chromadb
+requests
+pytest-asyncio
+psutil

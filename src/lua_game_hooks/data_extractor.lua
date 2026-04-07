@@ -1,7 +1,7 @@
 local M = {}
 
 -- Add a recursive table printer function
-local function print_table_recursive(t, indent, visited, max_depth, current_depth)
+M.print_table_recursive = function(t, indent, visited, max_depth, current_depth)
     indent = indent or 0
     visited = visited or {}
     max_depth = max_depth or 3 -- Limit recursion depth
@@ -31,7 +31,7 @@ local function print_table_recursive(t, indent, visited, max_depth, current_dept
 
         if type(v) == "table" and not visited[v] then
             print(string.rep("  ", indent + 1) .. tostring(k) .. " = ")
-            print_table_recursive(v, indent + 2, visited, max_depth, current_depth + 1)
+            M.print_table_recursive(v, indent + 2, visited, max_depth, current_depth + 1)
         else
             print(string.rep("  ", indent + 1) .. tostring(k) .. " = " .. val_str)
         end
@@ -147,12 +147,15 @@ function M.extract_in_round_state()
     if G_hand_cards and type(G_hand_cards) == 'table' then
         for i, card in ipairs(G_hand_cards) do
             if type(card) == 'table' then -- Ensure it's a card object
-                table.insert(game_state.player_hand, {
+                local card_data = {
                     id = card.id or "UnknownID",
                     name = (card.get_full_name and card:get_full_name()) or (card._name and card._name) or "Unknown Card",
                     rank = (card.base and card.base.value) or "Unknown Rank",
-                    suit = (card.base and card.base.suit) or "Unknown Suit"
-                })
+                    suit = (card.base and card.base.suit) or "Unknown Suit",
+                    enhancement = card.enhancement or nil, -- Add enhancement if available
+                    edition = card.edition or nil -- Add edition if available
+                }
+                table.insert(game_state.player_hand, card_data)
             end
         end
     end
@@ -160,21 +163,22 @@ function M.extract_in_round_state()
     -- Tương tự với Joker
     local G_jokers_cards = safe_get_with_log({'G', 'jokers', 'cards'})
     if G_jokers_cards and type(G_jokers_cards) == 'table' then
-        for i, card in ipairs(G_jokers_cards) do -- 'card' here is a joker object
-            if type(card) == 'table' then
-                table.insert(game_state.active_jokers, {
-                    name = (card.ability and card.ability.name) or (card._name and card._name) or "Unknown Joker", -- Assuming ability.name exists
-                    -- Add other relevant joker properties if needed, like value or effect
-                    value = card.value or nil,
-                    effect = card.effect or nil,
-                })
+        for i, joker in ipairs(G_jokers_cards) do -- 'joker' here is a joker object
+            if type(joker) == 'table' then
+                local joker_data = {
+                    id = joker.id or joker.key or "UnknownID", -- Try joker.id, then joker.key for ID
+                    name = (joker.ability and joker.ability.name) or (joker._name and joker._name) or "Unknown Joker",
+                    effect = joker.effect or (joker.ability and joker.ability.effect) or "No Effect", -- Try joker.effect, then joker.ability.effect for effect
+                    rarity = (joker.ability and joker.ability.rarity) or nil
+                }
+                table.insert(game_state.active_jokers, joker_data)
             end
         end
     end
 
     -- Add this debug print after game_state is populated, or when G.STATE indicates active play
     print("DEBUG Lua: Full G table dump:")
-    print_table_recursive(_G.G, 0, nil, 3, 0) -- Dump G up to depth 3
+    M.print_table_recursive(_G.G, 0, nil, 3, 0) -- Dump G up to depth 3
 
 
     game_state.debug_path_log = debug_path_log -- Add the path log to game_state

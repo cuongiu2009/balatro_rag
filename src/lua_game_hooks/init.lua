@@ -89,6 +89,43 @@ function M.on_game_state_change()
         return
     end
 
+    -- BẮT ĐẦU DEBUG TẠM THỜI: In cấu trúc object sâu để tìm đường dẫn dữ liệu
+    print("\n--- DEBUG DUMP (Kiểm tra Key cấp 1 của _G.G) ---")
+    print("Các key cấp 1 của _G.G hiện có:")
+    if _G.G and type(_G.G) == 'table' then
+        for k, v in pairs(_G.G) do
+            print("  - " .. tostring(k) .. ": " .. type(v))
+        end
+    else
+        print("Bảng _G.G không tồn tại hoặc không phải là bảng.")
+    end
+
+    print("\n--- DEBUG DUMP (Conditional Deep Dumps) ---")
+    print("Dumping _G.G.hand.cards (nếu tồn tại, Depth 20):")
+    if _G.G and _G.G.hand and _G.G.hand.cards and type(_G.G.hand.cards) == 'table' then
+        data_extractor.print_table_recursive(_G.G.hand.cards, 0, nil, 20, 0)
+    else
+        print("_G.G.hand.cards không tồn tại hoặc không phải là bảng.")
+    end
+
+    print("\nDumping _G.G.jokers.cards (nếu tồn tại, Depth 20):")
+    if _G.G and _G.G.jokers and _G.G.jokers.cards and type(_G.G.jokers.cards) == 'table' then
+        data_extractor.print_table_recursive(_G.G.jokers.cards, 0, nil, 20, 0)
+    else
+        print("_G.G.jokers.cards không tồn tại hoặc không phải là bảng.")
+    end
+
+    print("\nDumping _G.G.P_CENTERS (Kiểm tra bảng định nghĩa Joker, Depth 1):")
+    if _G.G and _G.G.P_CENTERS and type(_G.G.P_CENTERS) == 'table' then
+        data_extractor.print_table_recursive(_G.G.P_CENTERS, 0, nil, 1, 0)
+    else
+        print("_G.G.P_CENTERS không tồn tại hoặc không phải là bảng.")
+    end
+    print("--- KẾT THÚC DEBUG DUMP ---")
+    -- KẾT THÚC DEBUG TẠM THỜI
+
+
+
     -- 2. Send the game state to the Python server and wait for response
     local ok, response_or_err = socket_client.send_gamestate(game_state)
     if not ok then
